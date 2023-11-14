@@ -16,6 +16,7 @@ protocol ViewModelType {
 }
 
 final class SearchViewModel: ViewModelType {
+    private let disposeBag = DisposeBag()
 
     struct Input {
 

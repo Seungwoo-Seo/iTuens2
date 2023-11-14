@@ -19,28 +19,79 @@ final class SearchViewController: BaseViewController {
     }()
     lazy var tableView = {
         let view = UITableView(frame: .zero, style: .plain)
-        view.dataSource = self
+        view.separatorStyle = .none
+        view.rowHeight = UITableView.automaticDimension
         view.register(SearchResultCell.self, forCellReuseIdentifier: SearchResultCell.identifier)
         return view
     }()
 
     let viewModel = SearchViewModel()
+    let disposeBag = DisposeBag()
+    let sections: BehaviorRelay<[AppInfoContainer]> = BehaviorRelay(value: [])
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         bind()
 
-        APIManager.shared.request()
+//        APIManager.shared.request { [weak self] appContainer in
+//            guard let self else {return}
+//            self.sections.accept([appContainer])
+//        }
     }
 
-    func bind() {
-//        let input = SearchViewModel.Input()
-//        let output = viewModel.transform(input: input)
 
-//        let dataSource = RxTableViewSectionedReloadDataSource { TableViewSectionedDataSource<SectionModelType>, <#UITableView#>, <#IndexPath#>, <#SectionModelType.Item#> in
-//            <#code#>
-//        }
+    func bind() {
+        searchController.searchBar.rx.text
+            .orEmpty
+            .map { $0.isEmpty }
+            .bind(with: self) { owner, bool in
+                if bool {
+                    owner.tableView.isHidden = bool
+                }
+            }
+            .disposed(by: disposeBag)
+
+        searchController.searchBar.rx.searchButtonClicked
+            .debounce(.seconds(1), scheduler: MainScheduler.instance)
+            .withLatestFrom(searchController.searchBar.rx.text.orEmpty) { _, query in
+                return query
+            }
+            .filter { !$0.isEmpty }
+            .bind(with: self) { owner, query in
+                APIManager.shared.request(query: query) { appInfoConatiner in
+                    owner.sections.accept([appInfoConatiner])
+
+                    DispatchQueue.main.async {
+                        owner.tableView.isHidden = false
+                    }
+                }
+            }
+            .disposed(by: disposeBag)
+
+
+        let input = SearchViewModel.Input(
+
+        )
+        let output = viewModel.transform(input: input)
+
+        // config
+        let dataSource = RxTableViewSectionedReloadDataSource<AppInfoContainer>(
+            configureCell: { dataSource, tableView, indexPath, item in
+                let cell = tableView.dequeueReusableCell(
+                    withIdentifier: SearchResultCell.identifier,
+                    for: indexPath
+                ) as? SearchResultCell
+
+                cell?.bind(with: item)
+
+                return cell ?? UITableViewCell()
+            })
+
+        // output
+        sections
+            .bind(to: tableView.rx.items(dataSource: dataSource))
+            .disposed(by: disposeBag)
     }
 
     override func initialAttributes() {
@@ -66,25 +117,6 @@ final class SearchViewController: BaseViewController {
         tableView.snp.makeConstraints { make in
             make.edges.equalTo(view.safeAreaLayoutGuide)
         }
-    }
-
-}
-
-extension SearchViewController: UITableViewDataSource {
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        10
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: SearchResultCell.identifier,
-            for: indexPath
-        ) as? SearchResultCell else {return UITableViewCell()}
-
-        cell.textLabel?.text = "\(indexPath)"
-        
-        return cell
     }
 
 }

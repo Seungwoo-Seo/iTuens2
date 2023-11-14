@@ -13,7 +13,28 @@ final class APIManager {
 
     private init() {}
 
-    func request() {
+    func request(query: String, completion: @escaping (AppInfoContainer) -> ()) {
+        let url = "https://itunes.apple.com/search?term=\(query)&country=kr&lang=ko_kr&entity=software&limit=10"
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+
+        AF
+            .request(
+                url,
+                encoding: JSONEncoding.default
+            )
+            .validate()
+            .responseDecodable(of: AppInfoContainer.self) { response in
+                switch response.result {
+                case .success(let succes):
+                    completion(succes)
+                case .failure(let error):
+                    print("❌ \(error)")
+                }
+            }
+    }
+
+
+    func request(completion: @escaping (AppInfoContainer) -> ()) {
         AF
             .request(
                 "https://itunes.apple.com/search?term=kakao&country=kr&lang=ko_kr&entity=software&limit=10",
@@ -23,7 +44,7 @@ final class APIManager {
             .responseDecodable(of: AppInfoContainer.self) { response in
                 switch response.result {
                 case .success(let succes):
-                    print("✅ \(succes)")
+                    completion(succes)
                 case .failure(let error):
                     print("❌ \(error)")
                 }

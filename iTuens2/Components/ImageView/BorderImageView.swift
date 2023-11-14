@@ -9,10 +9,10 @@ import UIKit
 
 final class BorderImageView: BaseImageView {
 
-    override func initialAttributes() {
-        super.initialAttributes()
+    override func layoutSubviews() {
+        super.layoutSubviews()
 
-        layer.borderWidth = 1
+        layer.borderWidth = 0.5
         layer.borderColor = UIColor.lightGray.cgColor
         layer.cornerRadius = 8
         clipsToBounds = true

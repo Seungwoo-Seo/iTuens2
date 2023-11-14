@@ -13,7 +13,6 @@ final class TitleLabel: BaseLabel {
         super.initialAttributes()
 
         textColor = .black
-        textAlignment = .center
         font = .systemFont(ofSize: 20, weight: .bold)
     }
 
