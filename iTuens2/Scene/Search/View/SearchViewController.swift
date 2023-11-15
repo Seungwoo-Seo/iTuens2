@@ -14,7 +14,6 @@ final class SearchViewController: BaseViewController {
     lazy var searchController = {
         let controller = UISearchController(searchResultsController: nil)
         controller.searchBar.placeholder = "게임, 앱, 스토리 등"
-        controller.searchBar.delegate = self
         return controller
     }()
     lazy var tableView = {
@@ -25,19 +24,13 @@ final class SearchViewController: BaseViewController {
         return view
     }()
 
-    let viewModel = SearchViewModel()
-    let disposeBag = DisposeBag()
-    let sections: BehaviorRelay<[AppInfoContainer]> = BehaviorRelay(value: [])
+    private let viewModel = SearchViewModel()
+    private let disposeBag = DisposeBag()
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         bind()
-
-//        APIManager.shared.request { [weak self] appContainer in
-//            guard let self else {return}
-//            self.sections.accept([appContainer])
-//        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -47,59 +40,29 @@ final class SearchViewController: BaseViewController {
     }
 
 
-    func bind() {
-        searchController.searchBar.rx.text
-            .orEmpty
-            .map { $0.isEmpty }
-            .bind(with: self) { owner, bool in
-                if bool {
-                    owner.tableView.isHidden = bool
-                }
-            }
-            .disposed(by: disposeBag)
-
-        searchController.searchBar.rx.searchButtonClicked
-            .debounce(.seconds(1), scheduler: MainScheduler.instance)
-            .withLatestFrom(searchController.searchBar.rx.text.orEmpty) { _, query in
-                return query
-            }
-            .filter { !$0.isEmpty }
-            .bind(with: self) { owner, query in
-                APIManager.shared.request(query: query) { appInfoConatiner in
-                    owner.sections.accept([appInfoConatiner])
-
-                    DispatchQueue.main.async {
-                        owner.tableView.isHidden = false
-                    }
-                }
-            }
-            .disposed(by: disposeBag)
-
-
-        Observable
-            .zip(
-                tableView.rx.itemSelected,
-                tableView.rx.modelSelected(AppInfo.self)
-            )
-            .bind(with: self) { owner, value in
-                let vc = DetailViewController()
-
-                let container = AppInfoContainer(items: [value.1])
-                vc.appInfoContainer.accept([container])
-
-                owner.navigationController?.pushViewController(vc, animated: true)
-            }
-            .disposed(by: disposeBag)
-
-
-
-
-
+    private func bind() {
         let input = SearchViewModel.Input(
-
+            query: searchController.searchBar.rx.text,
+            searchButtonClicked: searchController.searchBar.rx.searchButtonClicked,
+            itemSelected: tableView.rx.itemSelected,
+            modelSelected: tableView.rx.modelSelected(AppInfo.self)
         )
         
         let output = viewModel.transform(input: input)
+
+        output.queryIsEmpty
+            .bind(with: self) { owner, bool in
+                owner.tableView.isHidden = bool
+            }
+            .disposed(by: disposeBag)
+
+        output.containerList
+            .bind(with: self) { owner, list in
+                let vc = DetailViewController()
+                vc.appInfoContainer.accept(list)
+                owner.navigationController?.pushViewController(vc, animated: true)
+            }
+            .disposed(by: disposeBag)
 
         // config
         let dataSource = RxTableViewSectionedReloadDataSource<AppInfoContainer>(
@@ -114,9 +77,14 @@ final class SearchViewController: BaseViewController {
                 return cell ?? UITableViewCell()
             })
 
-        // output
-        sections
+        output.sectionList
             .bind(to: tableView.rx.items(dataSource: dataSource))
+            .disposed(by: disposeBag)
+
+        output.sectionList
+            .bind(with: self) { owner, container in
+                owner.tableView.isHidden = false
+            }
             .disposed(by: disposeBag)
     }
 
@@ -144,12 +112,3 @@ final class SearchViewController: BaseViewController {
     }
 
 }
-
-extension SearchViewController: UISearchBarDelegate {
-
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        print(#function)
-    }
-
-}
-
