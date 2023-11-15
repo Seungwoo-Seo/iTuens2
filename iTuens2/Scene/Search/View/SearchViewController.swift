@@ -40,6 +40,12 @@ final class SearchViewController: BaseViewController {
 //        }
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        navigationController?.navigationBar.prefersLargeTitles = true
+    }
+
 
     func bind() {
         searchController.searchBar.rx.text
@@ -70,9 +76,29 @@ final class SearchViewController: BaseViewController {
             .disposed(by: disposeBag)
 
 
+        Observable
+            .zip(
+                tableView.rx.itemSelected,
+                tableView.rx.modelSelected(AppInfo.self)
+            )
+            .bind(with: self) { owner, value in
+                let vc = DetailViewController()
+
+                let container = AppInfoContainer(items: [value.1])
+                vc.appInfoContainer.accept([container])
+
+                owner.navigationController?.pushViewController(vc, animated: true)
+            }
+            .disposed(by: disposeBag)
+
+
+
+
+
         let input = SearchViewModel.Input(
 
         )
+        
         let output = viewModel.transform(input: input)
 
         // config
@@ -98,8 +124,6 @@ final class SearchViewController: BaseViewController {
         super.initialAttributes()
 
         view.backgroundColor = .systemBackground
-
-        navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.title = "검색"
         navigationItem.hidesSearchBarWhenScrolling = false
         navigationItem.searchController = searchController
