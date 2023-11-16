@@ -171,8 +171,8 @@
 		57CB61752B03652D00482DBC /* Search */ = {
 			isa = PBXGroup;
 			children = (
-				57CB61762B03652D00482DBC /* ViewModel */,
 				57CB61782B03652D00482DBC /* View */,
+				57CB61762B03652D00482DBC /* ViewModel */,
 			);
 			path = Search;
 			sourceTree = "<group>";
