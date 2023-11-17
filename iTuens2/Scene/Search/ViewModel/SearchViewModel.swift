@@ -113,17 +113,8 @@ final class SearchViewModel: ViewModelType {
                         return Single.just(AppInfoContainer())
                     }
             }
-            .subscribe { container in
-                print(container)
-                print("asfasfasdfadsfasdf")
-
-                print("success")
-            } onError: { error in
-                print("----------->", error)
-            } onCompleted: {
-                print("completed")
-            } onDisposed: {
-                print("disposed")
+            .bind(with: self) { owner, container in
+                owner.sectionList.accept([container])
             }
             .disposed(by: disposeBag)
 
