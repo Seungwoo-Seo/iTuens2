@@ -25,6 +25,7 @@ final class DetailViewController: BaseViewController {
     let detailSections: BehaviorRelay<[DetailSection]> = BehaviorRelay(value: [])
 
 
+    let viewModel = DetailViewModel()
     let disposeBag = DisposeBag()
 
 
