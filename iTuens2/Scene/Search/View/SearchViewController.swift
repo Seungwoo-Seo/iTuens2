@@ -59,7 +59,7 @@ final class SearchViewController: BaseViewController {
         output.containerList
             .bind(with: self) { owner, list in
                 let vc = DetailViewController()
-                vc.appInfoContainer.accept(list)
+                vc.viewModel.appInfoContainer.accept(list)
                 owner.navigationController?.pushViewController(vc, animated: true)
             }
             .disposed(by: disposeBag)

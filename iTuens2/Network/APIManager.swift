@@ -102,7 +102,7 @@ final class APIManager {
     func bestRequest(query: String) -> Single<AppInfoContainer> {
         return Single.create { (single) -> Disposable in
 
-            let url = "https://itunes.apple.com/searchs?term=\(query)&country=kr&lang=ko_kr&entity=software&limit=10"
+            let url = "https://itunes.apple.com/search?term=\(query)&country=kr&lang=ko_kr&entity=software&limit=10"
                 .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
 
             AF
@@ -113,7 +113,7 @@ final class APIManager {
                     case .success(let container):
                         single(.success(container))
 
-                    case .failure(let _):
+                    case .failure:
                         single(.failure(NetworkError.one))
                     }
                 }

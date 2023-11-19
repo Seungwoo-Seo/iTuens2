@@ -21,9 +21,6 @@ final class DetailViewController: BaseViewController {
         return view
     }()
 
-    let appInfoContainer: BehaviorRelay<[AppInfoContainer]> = BehaviorRelay(value: [])
-    let detailSections: BehaviorRelay<[DetailSection]> = BehaviorRelay(value: [])
-
 
     let viewModel = DetailViewModel()
     let disposeBag = DisposeBag()
@@ -57,6 +54,9 @@ final class DetailViewController: BaseViewController {
 
 
     func bind() {
+        let input = DetailViewModel.Input()
+        let output = viewModel.transform(input: input)
+
         let dataSource = RxCollectionViewSectionedReloadDataSource<DetailSection>(
             configureCell: { dataSource, collectionView, indexPath, item in
                 let section = Section.allCases[indexPath.section]
@@ -94,47 +94,7 @@ final class DetailViewController: BaseViewController {
             }
         )
 
-
-        appInfoContainer
-            .map {
-                var detailSections: [DetailSection] = []
-
-                if let container = $0.first,
-                   let item = container.items.first {
-
-                    // 3개로 쪼개야함
-                    // 1.
-                    let section0 = DetailSection(items: [
-                        Detail(
-                            imageUrl100: item.imageUrl100,
-                            trackName: item.trackName,
-                            artistName: item.artistName,
-                            version: item.version,
-                            releaseNotes: item.releaseNotes
-                        )
-                    ])
-
-                    let section1 = DetailSection(items: [
-                        Detail(screenshotUrl: item.screenshotURLs[0]),
-                        Detail(screenshotUrl: item.screenshotURLs[1]),
-                        Detail(screenshotUrl: item.screenshotURLs[2]),
-                    ])
-
-                    let section2 = DetailSection(items: [
-                        Detail(description: item.description)
-                    ])
-
-                    [section0, section1, section2].forEach { detailSections.append($0) }
-                }
-
-                return detailSections
-            }
-            .bind(with: self) { owner, sections in
-                owner.detailSections.accept(sections)
-            }
-            .disposed(by: disposeBag)
-
-        detailSections
+        output.detailSections
             .bind(to: collectionView.rx.items(dataSource: dataSource))
             .disposed(by: disposeBag)
     }
